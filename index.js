@@ -52,6 +52,12 @@ async function run() {
         res.send(users);
     })
 
+    app.get('/tasks', async(req,res) =>{
+      const cursor=userdata.find();
+      const users = await cursor.toArray();
+      res.send(users);
+  })
+
   //   app.get('/users/:id',async(req,res)=>{
   //     const id=req.params.id;
   //     const query={_id: new ObjectId(id)};
