@@ -3,7 +3,7 @@ const cors = require("cors");
 const app = express();
 require('dotenv').config();
 const port= process.env.PORT  || 5000;
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
 //middleware
@@ -27,7 +27,13 @@ async function run() {
 
     // database collection name
     const userdata=client.db('assignment-12').collection('Users');
+    const added_tasks = client.db('assignment-12').collection('TaskCollection');
 
+    app.post('/tasks', async(req,res)=>{
+      const newTask=req.body;
+      const result = await added_tasks.insertOne(newTask);
+      res.send(result); 
+    })
 
     app.post('/users', async(req,res)=>{
         const newUser=req.body;
@@ -45,6 +51,35 @@ async function run() {
         const users = await cursor.toArray();
         res.send(users);
     })
+
+  //   app.get('/users/:id',async(req,res)=>{
+  //     const id=req.params.id;
+  //     const query={_id: new ObjectId(id)};
+  //     const room=await userdata.findOne(query);
+  //     res.send(room);
+  // })
+
+    app.put('/users/:id',async(req,res)=>{
+      const id=req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const options = { upsert: true };
+      const updatedstatus =req.body;
+      const coin = {
+          $set: {
+              coins:updatedstatus.coins
+          }
+      }
+      const result = await userdata.updateOne(filter,coin,options);
+      res.send(result);
+    })
+
+    app.get('/users/:email', async(req,res) =>{
+        const email = req.params.email;
+        const query = { email: email };
+        const result = await userdata.find(query).toArray();
+        res.send(result);
+    })
+
 
 
     await client.db("admin").command({ ping: 1 });
