@@ -53,17 +53,17 @@ async function run() {
     })
 
     app.get('/tasks', async(req,res) =>{
-      const cursor=userdata.find();
+      const cursor=added_tasks.find();
       const users = await cursor.toArray();
       res.send(users);
   })
 
-  //   app.get('/users/:id',async(req,res)=>{
-  //     const id=req.params.id;
-  //     const query={_id: new ObjectId(id)};
-  //     const room=await userdata.findOne(query);
-  //     res.send(room);
-  // })
+app.get('/tasks/:email',async(req,res)=>{
+       const email = req.params.email;
+        const query = { creator_email: email };
+        const result = await added_tasks.find(query).toArray();
+        res.send(result);
+})
 
     app.put('/users/:id',async(req,res)=>{
       const id=req.params.id;
