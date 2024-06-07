@@ -79,6 +79,22 @@ app.get('/tasks/:email',async(req,res)=>{
       res.send(result);
     })
 
+    app.put('/tasks/:id',async(req,res)=>{
+      const id=req.params.id;
+      const filter = {_id: new ObjectId(id)};
+      const options = { upsert: true };
+      const updatedstatus =req.body;
+      const coin = {
+          $set: {
+            task_title:updatedstatus.task_title,
+            task_details:updatedstatus.task_details,
+            submission_info:updatedstatus.submission_info
+          }
+      }
+      const result = await added_tasks.updateOne(filter,coin,options);
+      res.send(result);
+    })
+
     app.get('/users/:email', async(req,res) =>{
         const email = req.params.email;
         const query = { email: email };
