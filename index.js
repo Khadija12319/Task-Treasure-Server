@@ -59,6 +59,12 @@ async function run() {
         res.send(users);
     })
 
+    app.get('/submissions', async(req,res) =>{
+      const cursor=submission_collection.find();
+      const users = await cursor.toArray();
+      res.send(users);
+  })
+
     app.get('/tasks/:id', async(req,res)=>{
       const id=req.params.id;
       const query={_id: new ObjectId(id)};
