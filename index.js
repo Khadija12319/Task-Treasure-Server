@@ -52,6 +52,13 @@ async function run() {
         res.send(users);
     })
 
+    app.get('/tasks/:id', async(req,res)=>{
+      const id=req.params.id;
+      const query={_id: new ObjectId(id)};
+      const task=await added_tasks.findOne(query);
+      res.send(task);
+    })
+
     app.get('/tasks', async(req,res) =>{
       const cursor=added_tasks.find();
       const users = await cursor.toArray();
@@ -61,7 +68,7 @@ async function run() {
 app.get('/tasks/:email',async(req,res)=>{
        const email = req.params.email;
         const query = { creator_email: email };
-        const result = await added_tasks.find(query).toArray();
+        const result = await added_tasks.find(query).sort({ current_time: -1 }).toArray();
         res.send(result);
 })
 
@@ -94,6 +101,14 @@ app.get('/tasks/:email',async(req,res)=>{
       const result = await added_tasks.updateOne(filter,coin,options);
       res.send(result);
     })
+
+    app.delete('/tasks/:id',async(req,res)=>{
+      const id=req.params.id;
+      const query={_id: new ObjectId(id)};
+      const books=await added_tasks.deleteOne(query);
+      res.send(books);
+    })
+
 
     app.get('/users/:email', async(req,res) =>{
         const email = req.params.email;
