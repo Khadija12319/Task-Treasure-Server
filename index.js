@@ -28,11 +28,18 @@ async function run() {
     // database collection name
     const userdata=client.db('assignment-12').collection('Users');
     const added_tasks = client.db('assignment-12').collection('TaskCollection');
+    const submission_collection = client.db('assignment-12').collection('Submission Collection');
 
     app.post('/tasks', async(req,res)=>{
       const newTask=req.body;
       const result = await added_tasks.insertOne(newTask);
       res.send(result); 
+    })
+
+    app.post('/submissions',async(req,res)=>{
+      const newTask=req.body;
+      const result = await submission_collection.insertOne(newTask);
+      res.send(result);
     })
 
     app.post('/users', async(req,res)=>{
