@@ -3,6 +3,7 @@ const cors = require("cors");
 const app = express();
 require('dotenv').config();
 const port= process.env.PORT  || 5000;
+const stripe=require('stripe')(process.env.STRIPE_SECRET_KEY);
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 
 
@@ -29,18 +30,29 @@ async function run() {
     const userdata=client.db('assignment-12').collection('Users');
     const added_tasks = client.db('assignment-12').collection('TaskCollection');
     const submission_collection = client.db('assignment-12').collection('Submission Collection');
+    const payment_collection=client.db('assignment-12').collection('Payment Collections');
 
-    app.post('/tasks', async(req,res)=>{
-      const newTask=req.body;
-      const result = await added_tasks.insertOne(newTask);
-      res.send(result); 
-    })
+    // post requests
+
 
     app.post('/submissions',async(req,res)=>{
       const newTask=req.body;
       const result = await submission_collection.insertOne(newTask);
       res.send(result);
     })
+
+    app.get('/users', async(req,res) =>{
+      const cursor=userdata.find();
+      const users = await cursor.toArray();
+      res.send(users);
+  })
+
+  app.get('/users/:email', async(req,res) =>{
+    const email = req.params.email;
+    const query = { email: email };
+    const result = await userdata.find(query).toArray();
+    res.send(result);
+})
 
     app.post('/users', async(req,res)=>{
         const newUser=req.body;
@@ -52,38 +64,6 @@ async function run() {
         const result = await userdata.insertOne(newUser);
         res.send(result); 
     })
-
-    app.get('/users', async(req,res) =>{
-        const cursor=userdata.find();
-        const users = await cursor.toArray();
-        res.send(users);
-    })
-
-    app.get('/submissions', async(req,res) =>{
-      const cursor=submission_collection.find();
-      const users = await cursor.toArray();
-      res.send(users);
-  })
-
-    app.get('/tasks/:id', async(req,res)=>{
-      const id=req.params.id;
-      const query={_id: new ObjectId(id)};
-      const task=await added_tasks.findOne(query);
-      res.send(task);
-    })
-
-    app.get('/tasks', async(req,res) =>{
-      const cursor=added_tasks.find();
-      const users = await cursor.toArray();
-      res.send(users);
-  })
-
-app.get('/tasks/:email',async(req,res)=>{
-       const email = req.params.email;
-        const query = { creator_email: email };
-        const result = await added_tasks.find(query).sort({ current_time: -1 }).toArray();
-        res.send(result);
-})
 
     app.put('/users/:id',async(req,res)=>{
       const id=req.params.id;
@@ -98,6 +78,75 @@ app.get('/tasks/:email',async(req,res)=>{
       const result = await userdata.updateOne(filter,coin,options);
       res.send(result);
     })
+
+    // get requests
+
+    app.post('/tasks', async(req,res)=>{
+      const newTask=req.body;
+      const result = await added_tasks.insertOne(newTask);
+      res.send(result); 
+    })
+
+    app.get('/submissions', async(req,res) =>{
+      const cursor=submission_collection.find();
+      const users = await cursor.toArray();
+      res.send(users);
+  })
+
+  app.get('/tasks', async(req,res) =>{
+    const cursor=added_tasks.find();
+    const users = await cursor.toArray();
+    res.send(users);
+})
+
+app.get('/submissions/:email', async(req,res) =>{
+  const email = req.params.email;
+  const query = {
+    $or: [
+        { worker_email: email },
+        { creator_email: email }
+    ]
+};
+  const result = await submission_collection.find(query).toArray();
+  res.send(result);
+})
+
+app.get('/tasks/:email',async(req,res)=>{
+  const email = req.params.email;
+   const query = { creator_email: email };
+   const result = await added_tasks.find(query).sort({ current_time: -1 }).toArray();
+   res.send(result);
+})
+
+    app.get('/tasks/:id', async(req,res)=>{
+      const id=req.params.id;
+      const query={_id: new ObjectId(id)};
+      const task=await added_tasks.findOne(query);
+      res.send(task);
+    })
+
+
+
+
+// put requests
+
+
+
+
+    app.put('/submissions/:id', async (req, res) => {
+      const id = req.params.id;
+      const filter = { _id: new ObjectId(id) }; 
+      const options = { upsert: true };
+      const updatedStatus = req.body;
+  
+          const result = await submission_collection.updateOne(filter, 
+            { $set: { status: updatedStatus.status } 
+          },options);
+          res.send(result);
+          
+      }
+  );
+  
 
     app.put('/tasks/:id',async(req,res)=>{
       const id=req.params.id;
@@ -115,6 +164,9 @@ app.get('/tasks/:email',async(req,res)=>{
       res.send(result);
     })
 
+
+    // delete requests
+
     app.delete('/tasks/:id',async(req,res)=>{
       const id=req.params.id;
       const query={_id: new ObjectId(id)};
@@ -122,13 +174,32 @@ app.get('/tasks/:email',async(req,res)=>{
       res.send(books);
     })
 
+// payment intent
+app.post('/create-payment-intent', async(req,res)=>{
+  const {price} =req.body;
+  const amount= parseInt(price*100);
 
-    app.get('/users/:email', async(req,res) =>{
-        const email = req.params.email;
-        const query = { email: email };
-        const result = await userdata.find(query).toArray();
-        res.send(result);
-    })
+  const paymentIntent = await stripe.paymentIntents.create({
+    amount:amount,
+    currency:'usd',
+    payment_method_types:['card']
+  });
+  res.send({
+    clientSecret:paymentIntent.client_secret
+  })
+})
+// payment collection
+app.post('/payments',async(req,res)=>{
+  const payment=req.body;
+  const paymentResult=await payment_collection.insertOne(payment);
+  res.send(paymentResult);
+})
+
+app.get('/payments',async(req,res)=>{
+      const cursor=payment_collection.find();
+      const payments = await cursor.toArray();
+      res.send(payments);
+})
 
 
 
