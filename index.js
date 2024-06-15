@@ -201,6 +201,13 @@ app.get('/payments',async(req,res)=>{
       res.send(payments);
 })
 
+app.get('/payments/:email',async(req,res)=>{
+  const email = req.params.email;
+   const query = { email: email };
+   const result = await payment_collection.find(query).toArray();
+   res.send(result);
+})
+
 
 
     await client.db("admin").command({ ping: 1 });
