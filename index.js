@@ -31,6 +31,7 @@ async function run() {
     const added_tasks = client.db('assignment-12').collection('TaskCollection');
     const submission_collection = client.db('assignment-12').collection('Submission Collection');
     const payment_collection=client.db('assignment-12').collection('Payment Collections');
+    const WITHDRAW_COLLECTION=client.db('assignment-12').collection('WITHDRAW_COLLECTION');
 
     // post requests
 
@@ -41,18 +42,20 @@ async function run() {
       res.send(result);
     })
 
+    app.get('/users/:email', async(req,res) =>{
+      const email = req.params.email;
+      const query = { email: email };
+      const result = await userdata.find(query).toArray();
+      res.send(result);
+  })
+
     app.get('/users', async(req,res) =>{
       const cursor=userdata.find();
       const users = await cursor.toArray();
       res.send(users);
   })
 
-  app.get('/users/:email', async(req,res) =>{
-    const email = req.params.email;
-    const query = { email: email };
-    const result = await userdata.find(query).toArray();
-    res.send(result);
-})
+  
 
     app.post('/users', async(req,res)=>{
         const newUser=req.body;
@@ -65,19 +68,40 @@ async function run() {
         res.send(result); 
     })
 
-    app.put('/users/:id',async(req,res)=>{
-      const id=req.params.id;
-      const filter = {_id: new ObjectId(id)};
-      const options = { upsert: true };
-      const updatedstatus =req.body;
-      const coin = {
-          $set: {
-              coins:updatedstatus.coins
-          }
-      }
-      const result = await userdata.updateOne(filter,coin,options);
-      res.send(result);
-    })
+    // app.put('/users/:id',async(req,res)=>{
+    //   const id=req.params.id;
+    //   const filter = {_id: new ObjectId(id)};
+    //   const options = { upsert: true };
+    //   const updatedstatus =req.body;
+    //   const coin = {
+    //       $set: {
+    //           coins:updatedstatus.coins
+    //       }
+    //   }
+    //   const result = await userdata.updateOne(filter,coin,options);
+    //   res.send(result);
+    // })
+    app.put('/users/:identifier', async(req, res) => {
+      const identifier = req.params.identifier;
+  const updatedStatus = req.body;
+
+  let query = {};
+  if (ObjectId.isValid(identifier) && identifier.length === 24) {
+    query = { _id: new ObjectId(identifier) };
+  } else {
+    query = { email: identifier };
+  }
+
+  const options = { upsert: true };
+  const update = {
+    $set: {
+      coins: updatedStatus.coins
+    }
+  };
+
+    const result = await userdata.updateOne(query, update, options);
+    res.send(result);
+    });
 
     // get requests
 
@@ -86,6 +110,18 @@ async function run() {
       const result = await added_tasks.insertOne(newTask);
       res.send(result); 
     })
+
+    app.post('/withdraws', async(req,res)=>{
+      const newWithDraw=req.body;
+      const result = await WITHDRAW_COLLECTION.insertOne(newWithDraw);
+      res.send(result); 
+    })
+
+    app.get('/withdraws', async(req,res) =>{
+      const cursor=WITHDRAW_COLLECTION.find();
+      const withdraws = await cursor.toArray();
+      res.send(withdraws);
+  })
 
     app.get('/submissions', async(req,res) =>{
       const cursor=submission_collection.find();
@@ -111,19 +147,25 @@ app.get('/submissions/:email', async(req,res) =>{
   res.send(result);
 })
 
-app.get('/tasks/:email',async(req,res)=>{
-  const email = req.params.email;
-   const query = { creator_email: email };
-   const result = await added_tasks.find(query).sort({ current_time: -1 }).toArray();
-   res.send(result);
-})
+app.get('/tasks/:identifier', async(req, res) => {
+  const identifier = req.params.identifier;
 
-    app.get('/tasks/:id', async(req,res)=>{
-      const id=req.params.id;
-      const query={_id: new ObjectId(id)};
-      const task=await added_tasks.findOne(query);
-      res.send(task);
-    })
+  // Check if identifier is a valid ObjectId (for fetching by _id)
+  if (ObjectId.isValid(identifier)) {
+      const query = { _id: new ObjectId(identifier) };
+      const task = await added_tasks.findOne(query);
+      if (task) {
+          res.send(task);
+      } else {
+          res.status(404).send('Task not found');
+      }
+  } else {
+      // Assume identifier is an email (for fetching by creator_email)
+      const query = { creator_email: identifier };
+      const result = await added_tasks.find(query).sort({ current_time: -1 }).toArray();
+      res.send(result);
+  }
+});
 
 
 
