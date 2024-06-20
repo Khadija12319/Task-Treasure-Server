@@ -215,7 +215,12 @@ app.get('/tasks/:identifier', async(req, res) => {
       const books=await added_tasks.deleteOne(query);
       res.send(books);
     })
-
+    app.delete('/withdraws/:id',async(req,res)=>{
+      const id=req.params.id;
+      const query={_id: new ObjectId(id)};
+      const books=await WITHDRAW_COLLECTION.deleteOne(query);
+      res.send(books);
+    })
 // payment intent
 app.post('/create-payment-intent', async(req,res)=>{
   const {price} =req.body;
